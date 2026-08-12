@@ -569,7 +569,4 @@ Built by **Nexoryn AI** as a demonstration of production-oriented workflow orche
 ---
 
 # License
-
-MIT License.
-
-See [LICENSE](LICENSE) for details.
+Proprietary Project — © 2026 Nexoryn AI. All rights reserved.
