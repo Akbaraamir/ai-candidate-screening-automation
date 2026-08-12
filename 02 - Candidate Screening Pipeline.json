@@ -1,0 +1,798 @@
+﻿{
+    "updatedAt":  "2026-07-30T16:18:39.552Z",
+    "createdAt":  "2026-07-25T10:30:59.437Z",
+    "id":  "oIn15QjTO0K8AqtS",
+    "name":  "Candidate Screening Pipeline",
+    "description":  null,
+    "active":  true,
+    "isArchived":  false,
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "pollTimes":  {
+                                                           "item":  [
+                                                                        {
+                                                                            "mode":  "everyMinute"
+                                                                        }
+                                                                    ]
+                                                       },
+                                         "documentId":  {
+                                                            "__rl":  true,
+                                                            "value":  "1JLugfk-yIAQKMyzX2GWSAcL9ptjHXYb_ElthLNFJG6o",
+                                                            "mode":  "list",
+                                                            "cachedResultName":  "NEXORYN Candidate Applications",
+                                                            "cachedResultUrl":  "https://docs.google.com/spreadsheets/d/1JLugfk-yIAQKMyzX2GWSAcL9ptjHXYb_ElthLNFJG6o/edit?usp=drivesdk"
+                                                        },
+                                         "sheetName":  {
+                                                           "__rl":  true,
+                                                           "value":  533702721,
+                                                           "mode":  "list",
+                                                           "cachedResultName":  "Form Responses 1",
+                                                           "cachedResultUrl":  "https://docs.google.com/spreadsheets/d/1JLugfk-yIAQKMyzX2GWSAcL9ptjHXYb_ElthLNFJG6o/edit#gid=533702721"
+                                                       },
+                                         "event":  "rowAdded",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.googleSheetsTrigger",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -832,
+                                       -336
+                                   ],
+                      "id":  "61487b24-160b-49c7-96e6-c2fe0880dcd6",
+                      "name":  "Google Sheets Trigger",
+                      "credentials":  {
+                                          "googleSheetsTriggerOAuth2Api":  {
+                                                                               "id":  "MHymm6YhKjPvF2QV",
+                                                                               "name":  "Google Sheets Trigger account 3"
+                                                                           }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const items = $input.all(); return items.map(item =\u003e { const resumeKey = Object.keys(item.json).find(key =\u003e key.trim() === \"Resume (PDF)\" ); const resumeUrl = resumeKey ? String(item.json[resumeKey]).trim() : \"\"; let fileId = null; if (resumeUrl) { const match = resumeUrl.match(/[-\\w]{25,}/); if (match) { fileId = match[0]; } } return { json: { ...item.json, resumeKey, resumeUrl, fileId, }, }; });"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -464,
+                                       -320
+                                   ],
+                      "id":  "c62a727a-3f36-495b-9a00-aed0ce8cc645",
+                      "name":  "Extract File ID"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "download",
+                                         "fileId":  {
+                                                        "__rl":  true,
+                                                        "value":  "={{ $(\u0027Extract File ID\u0027).first().json.fileId }}",
+                                                        "mode":  "id"
+                                                    },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.googleDrive",
+                      "typeVersion":  3,
+                      "position":  [
+                                       -208,
+                                       -320
+                                   ],
+                      "id":  "bac69a57-7692-46a1-b59c-2c922790b94c",
+                      "name":  "Download file",
+                      "credentials":  {
+                                          "googleDriveOAuth2Api":  {
+                                                                       "id":  "0sYf9PdoEjId0YMj",
+                                                                       "name":  "Google Drive account"
+                                                                   }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "pdf",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.extractFromFile",
+                      "typeVersion":  1.1,
+                      "position":  [
+                                       80,
+                                       -320
+                                   ],
+                      "id":  "7450e49c-b071-477e-b65d-9bcb2c0492c6",
+                      "name":  "Extract Resume Text"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const items = $input.all();\nconst triggerItems = $(\u0027Google Sheets Trigger\u0027).all();\n\nreturn items.map((item, index) =\u003e {\n\n  const trigger = triggerItems[index]?.json || {};\n\n  function getValue(name) {\n    const key = Object.keys(trigger).find(k =\u003e k.trim() === name);\n    return key ? trigger[key] : \"\";\n  }\n\n  return {\n    json: {\n      candidate: {\n        name: getValue(\"Full Name\"),\n        email: getValue(\"Email Address\"),\n        phone: getValue(\"Phone Number\"),\n        position: getValue(\"Position Applying For\"),\n        experience: getValue(\"Years of Professional Experience\"),\n        linkedin: getValue(\"LinkedIn Profile\"),\n        github: getValue(\"GitHub Portfolio\"),\n        location: getValue(\"Current Location\")\n      },\n      resume: item.json.text || \"\"\n    }\n  };\n});"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -144,
+                                       -48
+                                   ],
+                      "id":  "7d4009d8-9ada-4dc3-8f45-c0cc47c99dc7",
+                      "name":  "Create Candidate Object"
+                  },
+                  {
+                      "parameters":  {
+                                         "mode":  "combine",
+                                         "advanced":  true,
+                                         "mergeByFields":  {
+                                                               "values":  [
+                                                                              {
+                                                                                  "field1":  "position",
+                                                                                  "field2":  "Position"
+                                                                              }
+                                                                          ]
+                                                           },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.merge",
+                      "typeVersion":  3.2,
+                      "position":  [
+                                       752,
+                                       -32
+                                   ],
+                      "id":  "da4f1127-f101-4143-9d57-edef010d54a6",
+                      "name":  "Merge Candidate + Requirements"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const items = $input.all(); const candidateItems = $(\u0027Create Candidate Object\u0027).all(); return items.map((item, index) =\u003e { let text = item.json.text || item.json.output || item.json.response || \"\"; text = text.replace(/```json\\n?/g, \u0027\u0027).replace(/```/g, \u0027\u0027).trim(); let parsed; try { parsed = JSON.parse(text); } catch (e) { parsed = { parseError: true, rawText: text }; } const candidate = candidateItems[index].json.candidate; return { json: { ...parsed, candidateName: candidate.name, candidateEmail: candidate.email, candidatePhone: candidate.phone, position: candidate.position } }; });\n1\n2\n3\n4\n"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       464,
+                                       -48
+                                   ],
+                      "id":  "0f4182be-6870-47ab-9435-3eaf08abaafb",
+                      "name":  "Parse AI JSON"
+                  },
+                  {
+                      "parameters":  {
+                                         "promptType":  "define",
+                                         "text":  "=={{\n`You are an expert Technical Recruiter and Applicant Tracking System (ATS).\n\nYour task is to analyze a candidate\u0027s resume and extract structured information.\n\nIMPORTANT RULES:\n- Return ONLY valid JSON.\n- Do NOT wrap the response in markdown.\n- Do NOT explain your reasoning.\n- Do NOT include any text before or after the JSON.\n- If information is missing, return an empty string \"\", an empty array [], or 0.\n- Never invent information that does not appear in the resume.\n- Normalize skills (for example: \"JS\" becomes \"JavaScript\").\n\nCandidate Details\n\nName:\n${$json.candidate.name}\n\nEmail:\n${$json.candidate.email}\n\nPhone:\n${$json.candidate.phone}\n\nPosition Applied:\n${$json.candidate.position}\n\nExperience Selected:\n${$json.candidate.experience}\n\nLocation:\n${$json.candidate.location}\n\nLinkedIn:\n${$json.candidate.linkedin}\n\nGitHub:\n${$json.candidate.github}\n\nResume Text:\n\n Resume Text: ${$json.resume}\n\nReturn EXACTLY this JSON structure:\n\n{\n  \"candidateName\": \"\",\n  \"email\": \"\",\n  \"phone\": \"\",\n  \"position\": \"\",\n  \"location\": \"\",\n  \"summary\": \"\",\n  \"skills\": [],\n  \"programmingLanguages\": [],\n  \"frameworks\": [],\n  \"databases\": [],\n  \"cloudPlatforms\": [],\n  \"tools\": [],\n  \"education\": \"\",\n  \"certifications\": [],\n  \"yearsExperience\": 0,\n  \"projects\": [],\n  \"strengths\": [],\n  \"weaknesses\": []\n}`\n}}",
+                                         "batching":  {
+
+                                                      }
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.chainLlm",
+                      "typeVersion":  1.9,
+                      "position":  [
+                                       64,
+                                       -48
+                                   ],
+                      "id":  "341fdc3f-0e65-4eb0-bee2-6cd61dd422eb",
+                      "name":  "Basic LLM Chain"
+                  },
+                  {
+                      "parameters":  {
+                                         "model":  "llama-3.3-70b-versatile",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.lmChatGroq",
+                      "typeVersion":  1,
+                      "position":  [
+                                       64,
+                                       128
+                                   ],
+                      "id":  "e30db848-e1a5-4172-85d4-2d6c2136373d",
+                      "name":  "Groq Chat Model",
+                      "credentials":  {
+                                          "groqApi":  {
+                                                          "id":  "kDbUvQMKue9zinWF",
+                                                          "name":  "Groq account"
+                                                      }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "documentId":  {
+                                                            "__rl":  true,
+                                                            "value":  "1jvL-0ogZm3NzYQD53q8v_bzsCK991JTlia8tRExs3YE",
+                                                            "mode":  "list",
+                                                            "cachedResultName":  "JobRequirements",
+                                                            "cachedResultUrl":  "https://docs.google.com/spreadsheets/d/1jvL-0ogZm3NzYQD53q8v_bzsCK991JTlia8tRExs3YE/edit?usp=drivesdk"
+                                                        },
+                                         "sheetName":  {
+                                                           "__rl":  true,
+                                                           "value":  "gid=0",
+                                                           "mode":  "list",
+                                                           "cachedResultName":  "Sheet1",
+                                                           "cachedResultUrl":  "https://docs.google.com/spreadsheets/d/1jvL-0ogZm3NzYQD53q8v_bzsCK991JTlia8tRExs3YE/edit#gid=0"
+                                                       },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.googleSheets",
+                      "typeVersion":  4.7,
+                      "position":  [
+                                       -448,
+                                       320
+                                   ],
+                      "id":  "d92fadba-4dc0-49ef-91be-f3c9591d62f3",
+                      "name":  "Requirements",
+                      "credentials":  {
+                                          "googleSheetsOAuth2Api":  {
+                                                                        "id":  "2eLaqUrdfU6HOiab",
+                                                                        "name":  "Google Sheets account"
+                                                                    }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const items = $input.all();\n\n/**\n * Better fuzzy matching\n */\nfunction fuzzyMatch(requiredSkill, candidateSkills) {\n  const req = requiredSkill.toLowerCase().trim();\n\n  return candidateSkills.some(skill =\u003e {\n    return (\n      skill === req ||\n      skill.includes(req) ||\n      req.includes(skill)\n    );\n  });\n}\n\n/**\n * Extract years from strings like:\n * \"2 years\"\n * \"1-2 years\"\n * \"3+ years\"\n */\nfunction extractYears(value) {\n  if (!value) return 0;\n\n  const matches = value.toString().match(/\\d+/g);\n\n  if (!matches) return 0;\n\n  return Math.max(...matches.map(Number));\n}\n\nreturn items.map(entry =\u003e {\n\n  const $json = entry.json;\n\n  const skills = [\n    ...($json.skills || []),\n    ...($json.programmingLanguages || []),\n    ...($json.frameworks || []),\n    ...($json.databases || []),\n    ...($json.cloudPlatforms || []),\n    ...($json.tools || [])\n  ]\n  .map(s =\u003e s.toLowerCase().trim());\n\n  const candidateExperience = Number($json.yearsExperience || 0);\n\n  const requiredSkills =\n    ($json[\"Required Skills\"] || \"\")\n      .split(\",\")\n      .map(s =\u003e s.trim())\n      .filter(Boolean);\n\n  const preferredSkills =\n    ($json[\"Preferred Skills\"] || \"\")\n      .split(\",\")\n      .map(s =\u003e s.trim())\n      .filter(Boolean);\n\n  const minimumExperience = extractYears($json[\"Minimum Experience\"]);\n  const minimumScore = Number($json[\"Minimum Score\"] || 70);\n\n  const matchedRequired = [];\n  const missingRequired = [];\n\n  requiredSkills.forEach(skill =\u003e {\n\n    if (fuzzyMatch(skill, skills)) {\n      matchedRequired.push(skill);\n    } else {\n      missingRequired.push(skill);\n    }\n\n  });\n\n  const matchedPreferred = [];\n\n  preferredSkills.forEach(skill =\u003e {\n\n    if (fuzzyMatch(skill, skills)) {\n      matchedPreferred.push(skill);\n    }\n\n  });\n\n  // -----------------------------\n  // SCORING\n  // -----------------------------\n\n  let score = 0;\n\n  // Required Skills = 60%\n\n  if (requiredSkills.length) {\n    score +=\n      (matchedRequired.length / requiredSkills.length) * 60;\n  }\n\n  // Preferred Skills = 20%\n\n  if (preferredSkills.length) {\n    score +=\n      (matchedPreferred.length / preferredSkills.length) * 20;\n  }\n\n  // Experience = 20%\n\n  if (candidateExperience \u003e= minimumExperience) {\n\n    score += 20;\n\n  } else if (minimumExperience \u003e 0) {\n\n    score +=\n      (candidateExperience / minimumExperience) * 20;\n\n  }\n\n  score = Math.round(score);\n\n  // -----------------------------\n  // DECISION\n  // -----------------------------\n\n  let recommendation = \"\";\n  let status = \"\";\n\n  if (score \u003e= minimumScore) {\n\n    recommendation = \"Interview\";\n    status = \"Shortlisted\";\n\n  } else if (score \u003e= minimumScore * 0.7) {\n\n    recommendation = \"Manual Review\";\n    status = \"Screening\";\n\n  } else {\n\n    recommendation = \"Reject\";\n    status = \"Rejected\";\n\n  }\n\n  // -----------------------------\n  // REASONING\n  // -----------------------------\n\n  const reasoning =\n    `Matched ${matchedRequired.length}/${requiredSkills.length} required skills, ` +\n    `${matchedPreferred.length}/${preferredSkills.length} preferred skills, ` +\n    `${candidateExperience} years of experience.`;\n\n  return {\n\n    json: {\n\n      ...$json,\n\n      fitScore: score,\n\n      matchedRequiredSkills: matchedRequired,\n\n      missingRequiredSkills: missingRequired,\n\n      matchedPreferredSkills: matchedPreferred,\n\n      recommendation,\n\n      status,\n\n      reasoning\n\n    }\n\n  };\n\n});"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       944,
+                                       -32
+                                   ],
+                      "id":  "61a5cb94-0b89-4ffe-a426-caaa9a840619",
+                      "name":  "Candidate Scoring Engine"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "append",
+                                         "documentId":  {
+                                                            "__rl":  true,
+                                                            "value":  "1_8gcfPjffnYoZMVrcEO3sjtGy02bDTHgws55VYXaSh4",
+                                                            "mode":  "list",
+                                                            "cachedResultName":  "Candidate Pipeline",
+                                                            "cachedResultUrl":  "https://docs.google.com/spreadsheets/d/1_8gcfPjffnYoZMVrcEO3sjtGy02bDTHgws55VYXaSh4/edit?usp=drivesdk"
+                                                        },
+                                         "sheetName":  {
+                                                           "__rl":  true,
+                                                           "value":  "gid=0",
+                                                           "mode":  "list",
+                                                           "cachedResultName":  "Sheet1",
+                                                           "cachedResultUrl":  "https://docs.google.com/spreadsheets/d/1_8gcfPjffnYoZMVrcEO3sjtGy02bDTHgws55VYXaSh4/edit#gid=0"
+                                                       },
+                                         "columns":  {
+                                                         "mappingMode":  "defineBelow",
+                                                         "value":  {
+                                                                       "Name":  "={{ $json.candidateName }}",
+                                                                       "Email":  "={{ $json.candidateEmail }}",
+                                                                       "Position":  "= {{ $json.position }}",
+                                                                       "FitScore":  "={{ $json.fitScore }}",
+                                                                       "Status":  "={{ $json.status }}",
+                                                                       "Reasoning":  "={{ $json.reasoning }}"
+                                                                   },
+                                                         "matchingColumns":  [
+
+                                                                             ],
+                                                         "schema":  [
+                                                                        {
+                                                                            "id":  "Name",
+                                                                            "displayName":  "Name",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "string",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "Email",
+                                                                            "displayName":  "Email",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "string",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "Position",
+                                                                            "displayName":  "Position",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "string",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "FitScore",
+                                                                            "displayName":  "FitScore",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "string",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "Status",
+                                                                            "displayName":  "Status",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "string",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "Reasoning",
+                                                                            "displayName":  "Reasoning",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "string",
+                                                                            "canBeUsedToMatch":  true
+                                                                        }
+                                                                    ],
+                                                         "attemptToConvertTypes":  false,
+                                                         "convertFieldsToString":  false
+                                                     },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.googleSheets",
+                      "typeVersion":  4.7,
+                      "position":  [
+                                       1152,
+                                       -32
+                                   ],
+                      "id":  "ccd49281-93d9-4b7e-8f49-ac557a4a4ad8",
+                      "name":  "Log to Pipeline",
+                      "credentials":  {
+                                          "googleSheetsOAuth2Api":  {
+                                                                        "id":  "2eLaqUrdfU6HOiab",
+                                                                        "name":  "Google Sheets account"
+                                                                    }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "rules":  {
+                                                       "values":  [
+                                                                      {
+                                                                          "conditions":  {
+                                                                                             "options":  {
+                                                                                                             "caseSensitive":  true,
+                                                                                                             "leftValue":  "",
+                                                                                                             "typeValidation":  "strict",
+                                                                                                             "version":  3
+                                                                                                         },
+                                                                                             "conditions":  [
+                                                                                                                {
+                                                                                                                    "leftValue":  "={{ $json.Status }}",
+                                                                                                                    "rightValue":  "Shortlisted",
+                                                                                                                    "operator":  {
+                                                                                                                                     "type":  "string",
+                                                                                                                                     "operation":  "equals"
+                                                                                                                                 },
+                                                                                                                    "id":  "b66bc2b2-579e-4404-ae6a-9645e71c69ca"
+                                                                                                                }
+                                                                                                            ],
+                                                                                             "combinator":  "and"
+                                                                                         },
+                                                                          "renameOutput":  true,
+                                                                          "outputKey":  "Top Match"
+                                                                      },
+                                                                      {
+                                                                          "conditions":  {
+                                                                                             "options":  {
+                                                                                                             "caseSensitive":  true,
+                                                                                                             "leftValue":  "",
+                                                                                                             "typeValidation":  "strict",
+                                                                                                             "version":  3
+                                                                                                         },
+                                                                                             "conditions":  [
+                                                                                                                {
+                                                                                                                    "id":  "675d78aa-b143-45fd-b741-cb177f07aff5",
+                                                                                                                    "leftValue":  "={{ $json.Status }}",
+                                                                                                                    "rightValue":  "Screening",
+                                                                                                                    "operator":  {
+                                                                                                                                     "type":  "string",
+                                                                                                                                     "operation":  "equals",
+                                                                                                                                     "name":  "filter.operator.equals"
+                                                                                                                                 }
+                                                                                                                }
+                                                                                                            ],
+                                                                                             "combinator":  "and"
+                                                                                         },
+                                                                          "renameOutput":  true,
+                                                                          "outputKey":  "Manual Review"
+                                                                      },
+                                                                      {
+                                                                          "conditions":  {
+                                                                                             "options":  {
+                                                                                                             "caseSensitive":  true,
+                                                                                                             "leftValue":  "",
+                                                                                                             "typeValidation":  "strict",
+                                                                                                             "version":  3
+                                                                                                         },
+                                                                                             "conditions":  [
+                                                                                                                {
+                                                                                                                    "id":  "1701b435-d873-4cf9-9114-81c05a3508f9",
+                                                                                                                    "leftValue":  "={{ $json.Status }}",
+                                                                                                                    "rightValue":  "Rejected",
+                                                                                                                    "operator":  {
+                                                                                                                                     "type":  "string",
+                                                                                                                                     "operation":  "equals",
+                                                                                                                                     "name":  "filter.operator.equals"
+                                                                                                                                 }
+                                                                                                                }
+                                                                                                            ],
+                                                                                             "combinator":  "and"
+                                                                                         },
+                                                                          "renameOutput":  true,
+                                                                          "outputKey":  "Weak Match"
+                                                                      }
+                                                                  ]
+                                                   },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.switch",
+                      "typeVersion":  3.4,
+                      "position":  [
+                                       1568,
+                                       -32
+                                   ],
+                      "id":  "6ae09fd0-aab4-48e0-8f25-745f77d95ec0",
+                      "name":  "Route by Status"
+                  },
+                  {
+                      "parameters":  {
+
+                                     },
+                      "type":  "n8n-nodes-base.limit",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -752,
+                                       304
+                                   ],
+                      "id":  "977480c5-cf84-4882-84be-719c66fda51e",
+                      "name":  "Limit"
+                  },
+                  {
+                      "parameters":  {
+                                         "fromEmail":  "Nexorynofficial@gmail.com",
+                                         "toEmail":  "=bscs2312355@szabist.pk",
+                                         "subject":  " You\u0027re moving forward â€” let\u0027s schedule a call. ",
+                                         "html":  "=\u003cdiv style=\"font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e5e5e5; border-radius: 8px;\"\u003e\n\n  \u003ch2 style=\"color: #1a73e8;\"\u003eYou\u0027re moving forward! ðŸŽ‰\u003c/h2\u003e\n\n  \u003cp\u003eHi {{ $json.Name }},\u003c/p\u003e\n\n  \u003cp\u003e\n    Thank you for applying for the\n    \u003cstrong\u003e{{ $json.Position }}\u003c/strong\u003e position.\n    We were impressed with your background and would love to speak with you further.\n  \u003c/p\u003e\n\n  \u003cp\u003e\n    Please use the link below to schedule a 30-minute screening call at a time that works for you:\n  \u003c/p\u003e\n\n  \u003cp style=\"text-align: center; margin: 24px 0;\"\u003e\n    \u003ca href=\"https://calendly.com/nexorynofficial/30min\"\n       style=\"background-color: #1a73e8; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;\"\u003e\n      Schedule Your Call\n    \u003c/a\u003e\n  \u003c/p\u003e\n\n  \u003cp\u003e\n    If you have any questions before then, feel free to reply to this email.\n  \u003c/p\u003e\n\n  \u003cp\u003e\n    Looking forward to speaking with you!\n  \u003c/p\u003e\n\n  \u003cp style=\"margin-top: 32px; color: #555;\"\u003e\n    Best regards,\u003cbr\u003e\n    \u003cstrong\u003eThe Hiring Team\u003c/strong\u003e\n  \u003c/p\u003e\n\n\u003c/div\u003e",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.emailSend",
+                      "typeVersion":  2.1,
+                      "position":  [
+                                       1808,
+                                       -208
+                                   ],
+                      "id":  "9999284a-9cb9-4928-ab3a-e4ae5424aa57",
+                      "name":  "Send Scheduling Link",
+                      "webhookId":  "b8a1c130-714a-4958-ba24-b21c024ca191",
+                      "credentials":  {
+                                          "smtp":  {
+                                                       "id":  "G1VUVVKQe9i2BZ0e",
+                                                       "name":  "SMTP account"
+                                                   }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "fromEmail":  "Nexorynofficial@gmail.com",
+                                         "toEmail":  "bscs2312355@szabist.pk",
+                                         "subject":  "=Update on your application â€” {{ $json.Position }}",
+                                         "html":  "=\u003cdiv style=\"font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e5e5e5; border-radius: 8px;\"\u003e \u003ch2 style=\"color: #333;\"\u003eUpdate on your application\u003c/h2\u003e \u003cp\u003eHi {{ $json.Name }},\u003c/p\u003e \u003cp\u003eThank you for applying for the \u003cstrong\u003e{{ $json.Position }}\u003c/strong\u003e position and for taking the time to share your background with us.\u003c/p\u003e \u003cp\u003eAfter careful review, we\u0027ve decided to move forward with other candidates whose experience more closely matches what we\u0027re looking for at this time. This was not an easy decision, and we genuinely appreciate the effort you put into your application.\u003c/p\u003e \u003cp\u003eWe\u0027ll keep your resume on file and would encourage you to apply again for future roles that match your skills.\u003c/p\u003e \u003cp style=\"margin-top: 32px; color: #555;\"\u003eWe wish you all the best in your job search.\u003cbr\u003e\u003cbr\u003eWarm regards,\u003cbr\u003e\u003cstrong\u003eThe Hiring Team\u003c/strong\u003e\u003c/p\u003e \u003c/div\u003e",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.emailSend",
+                      "typeVersion":  2.1,
+                      "position":  [
+                                       1824,
+                                       176
+                                   ],
+                      "id":  "4d2f7617-8b1c-468c-89ae-494ed735c5f6",
+                      "name":  "Send Decline Email",
+                      "webhookId":  "36428ff0-a7d9-4e43-8c52-b9f617dfd241",
+                      "credentials":  {
+                                          "smtp":  {
+                                                       "id":  "G1VUVVKQe9i2BZ0e",
+                                                       "name":  "SMTP account"
+                                                   }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  " const items = $input.all(); const sorted = items.slice().sort((a, b) =\u003e b.json.FitScore - a.json.FitScore); let message = `*Daily Candidate Digest â€” ${sorted.length} new applicant(s)*\\n\\n`; sorted.forEach(item =\u003e { const j = item.json; message += `*${j.Name}* â€” ${j.Position}\\nFit Score: ${j.FitScore}/100 | Status: ${j.Status}\\n_${j.Reasoning}_\\n\\n`; }); return [{ json: { message } }];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       1360,
+                                       224
+                                   ],
+                      "id":  "fb26e9da-116b-47e6-b113-ea5d70790bdf",
+                      "name":  "Build Digest"
+                  },
+                  {
+                      "parameters":  {
+                                         "select":  "channel",
+                                         "channelId":  {
+                                                           "__rl":  true,
+                                                           "value":  "hiring-updates",
+                                                           "mode":  "name"
+                                                       },
+                                         "text":  "={{ $json.message }}",
+                                         "otherOptions":  {
+                                                              "mrkdwn":  true
+                                                          }
+                                     },
+                      "type":  "n8n-nodes-base.slack",
+                      "typeVersion":  2.5,
+                      "position":  [
+                                       1568,
+                                       224
+                                   ],
+                      "id":  "c43d6b06-16b5-414c-b576-a9becbf6b684",
+                      "name":  "Send a message",
+                      "webhookId":  "4df8d7b9-6b58-46a4-8321-944143a06572",
+                      "credentials":  {
+                                          "slackApi":  {
+                                                           "id":  "5AoAIzoZIUz86fL6",
+                                                           "name":  "Slack account"
+                                                       }
+                                      }
+                  }
+              ],
+    "connections":  {
+                        "Google Sheets Trigger":  {
+                                                      "main":  [
+                                                                   [
+                                                                       {
+                                                                           "node":  "Extract File ID",
+                                                                           "type":  "main",
+                                                                           "index":  0
+                                                                       },
+                                                                       {
+                                                                           "node":  "Limit",
+                                                                           "type":  "main",
+                                                                           "index":  0
+                                                                       }
+                                                                   ]
+                                                               ]
+                                                  },
+                        "Extract File ID":  {
+                                                "main":  [
+                                                             [
+                                                                 {
+                                                                     "node":  "Download file",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 }
+                                                             ]
+                                                         ]
+                                            },
+                        "Download file":  {
+                                              "main":  [
+                                                           [
+                                                               {
+                                                                   "node":  "Extract Resume Text",
+                                                                   "type":  "main",
+                                                                   "index":  0
+                                                               }
+                                                           ]
+                                                       ]
+                                          },
+                        "Extract Resume Text":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Create Candidate Object",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "Create Candidate Object":  {
+                                                        "main":  [
+                                                                     [
+                                                                         {
+                                                                             "node":  "Basic LLM Chain",
+                                                                             "type":  "main",
+                                                                             "index":  0
+                                                                         }
+                                                                     ]
+                                                                 ]
+                                                    },
+                        "Merge Candidate + Requirements":  {
+                                                               "main":  [
+                                                                            [
+                                                                                {
+                                                                                    "node":  "Candidate Scoring Engine",
+                                                                                    "type":  "main",
+                                                                                    "index":  0
+                                                                                }
+                                                                            ]
+                                                                        ]
+                                                           },
+                        "Basic LLM Chain":  {
+                                                "main":  [
+                                                             [
+                                                                 {
+                                                                     "node":  "Parse AI JSON",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 }
+                                                             ]
+                                                         ]
+                                            },
+                        "Groq Chat Model":  {
+                                                "ai_languageModel":  [
+                                                                         [
+                                                                             {
+                                                                                 "node":  "Basic LLM Chain",
+                                                                                 "type":  "ai_languageModel",
+                                                                                 "index":  0
+                                                                             }
+                                                                         ]
+                                                                     ]
+                                            },
+                        "Parse AI JSON":  {
+                                              "main":  [
+                                                           [
+                                                               {
+                                                                   "node":  "Merge Candidate + Requirements",
+                                                                   "type":  "main",
+                                                                   "index":  0
+                                                               }
+                                                           ]
+                                                       ]
+                                          },
+                        "Requirements":  {
+                                             "main":  [
+                                                          [
+                                                              {
+                                                                  "node":  "Merge Candidate + Requirements",
+                                                                  "type":  "main",
+                                                                  "index":  1
+                                                              }
+                                                          ]
+                                                      ]
+                                         },
+                        "Candidate Scoring Engine":  {
+                                                         "main":  [
+                                                                      [
+                                                                          {
+                                                                              "node":  "Log to Pipeline",
+                                                                              "type":  "main",
+                                                                              "index":  0
+                                                                          }
+                                                                      ]
+                                                                  ]
+                                                     },
+                        "Log to Pipeline":  {
+                                                "main":  [
+                                                             [
+                                                                 {
+                                                                     "node":  "Route by Status",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 },
+                                                                 {
+                                                                     "node":  "Build Digest",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 }
+                                                             ]
+                                                         ]
+                                            },
+                        "Limit":  {
+                                      "main":  [
+                                                   [
+                                                       {
+                                                           "node":  "Requirements",
+                                                           "type":  "main",
+                                                           "index":  0
+                                                       }
+                                                   ]
+                                               ]
+                                  },
+                        "Route by Status":  {
+                                                "main":  [
+                                                             [
+                                                                 {
+                                                                     "node":  "Send Scheduling Link",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 }
+                                                             ],
+                                                             [
+
+                                                             ],
+                                                             [
+                                                                 {
+                                                                     "node":  "Send Decline Email",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 }
+                                                             ]
+                                                         ]
+                                            },
+                        "Build Digest":  {
+                                             "main":  [
+                                                          [
+                                                              {
+                                                                  "node":  "Send a message",
+                                                                  "type":  "main",
+                                                                  "index":  0
+                                                              }
+                                                          ]
+                                                      ]
+                                         }
+                    },
+    "settings":  {
+                     "executionOrder":  "v1",
+                     "binaryMode":  "separate",
+                     "availableInMCP":  false
+                 },
+    "staticData":  {
+                       "node:Google Sheets Trigger":  {
+                                                          "documentId":  "1JLugfk-yIAQKMyzX2GWSAcL9ptjHXYb_ElthLNFJG6o",
+                                                          "sheetId":  533702721,
+                                                          "lastIndexChecked":  5
+                                                      }
+                   },
+    "meta":  {
+                 "templateCredsSetupCompleted":  true
+             },
+    "nodeGroups":  [
+
+                   ],
+    "pinData":  {
+
+                },
+    "versionId":  "282c837e-9cb5-4d2e-9af9-ff2a6be42a0b",
+    "activeVersionId":  "282c837e-9cb5-4d2e-9af9-ff2a6be42a0b",
+    "versionCounter":  272,
+    "triggerCount":  1,
+    "sourceWorkflowId":  null,
+    "tags":  [
+
+             ],
+    "shared":  [
+                   {
+                       "updatedAt":  "2026-07-25T10:30:59.443Z",
+                       "createdAt":  "2026-07-25T10:30:59.443Z",
+                       "role":  "workflow:owner",
+                       "workflowId":  "oIn15QjTO0K8AqtS",
+                       "projectId":  "8CptV00nTXQ4nKnG",
+                       "project":  {
+                                       "updatedAt":  "2026-07-20T15:44:23.710Z",
+                                       "createdAt":  "2026-07-20T15:43:22.098Z",
+                                       "id":  "8CptV00nTXQ4nKnG",
+                                       "name":  "Nexoryn Ai \u003cnexorynofficial@gmail.com\u003e",
+                                       "type":  "personal",
+                                       "icon":  null,
+                                       "description":  null,
+                                       "customTelemetryTags":  [
+
+                                                               ],
+                                       "creatorId":  "bd9af719-6069-4a30-96e7-78497a7ac2f8"
+                                   }
+                   }
+               ],
+    "versionMetadata":  {
+                            "name":  "Version 282c837e",
+                            "description":  ""
+                        }
+}
